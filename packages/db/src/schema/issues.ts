@@ -82,6 +82,7 @@ export const issues = pgTable(
         sql`${table.originKind} = 'routine_execution'
           and ${table.originId} is not null
           and ${table.hiddenAt} is null
+          and ${table.executionRunId} is not null
           and ${table.status} in ('backlog', 'todo', 'in_progress', 'in_review', 'blocked')`,
       ),
   }),
