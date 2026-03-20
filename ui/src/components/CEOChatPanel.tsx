@@ -286,33 +286,91 @@ export function CEOChatPanel({
     }
   }, [comments, detectedPlanCommentId, ignoreBeforeCommentId, taskId, onPlanDetected, queryClient]);
 
-  // Send message
+  // Streaming response state
+  const [streamingText, setStreamingText] = useState("");
+
+  // Send message — try streaming relay first, fall back to poll-based
   const sendMessage = useCallback(async (body: string) => {
     const trimmed = body.trim();
     if (!trimmed || sending) return;
     setSending(true);
-    try {
-      try {
-        await issuesApi.update(taskId, { assigneeUserId: null });
-      } catch { /* may already be null */ }
-      try {
-        await issuesApi.update(taskId, {
-          assigneeAgentId: agentId,
-          status: "in_progress",
-        });
-      } catch { /* may already be assigned */ }
+    setInput("");
+    setOptimisticTyping(true);
 
-      await issuesApi.addComment(taskId, trimmed, true, true);
-      setInput("");
-      setOptimisticTyping(true); // Show typing indicator immediately
-      const latestId = comments?.[comments.length - 1]?.id ?? null;
-      setIgnoreBeforeCommentId(latestId);
-      setDetectedPlanCommentId(null);
+    const latestId = comments?.[comments.length - 1]?.id ?? null;
+    setIgnoreBeforeCommentId(latestId);
+    setDetectedPlanCommentId(null);
+
+    // Ensure task is assigned to agent
+    try {
+      await issuesApi.update(taskId, { assigneeUserId: null });
+    } catch { /* ok */ }
+    try {
+      await issuesApi.update(taskId, { assigneeAgentId: agentId, status: "in_progress" });
+    } catch { /* ok */ }
+
+    try {
+      // Try streaming relay
+      const res = await fetch(`/api/agents/${agentId}/chat/relay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, message: trimmed }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error("Relay not available");
+      }
+
+      setOptimisticTyping(false);
+      setStreamingText("");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "chunk") {
+              setStreamingText((prev) => prev + event.text);
+            } else if (event.type === "done") {
+              setStreamingText("");
+              // Refresh comments to pick up persisted messages
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.issues.comments(taskId),
+              });
+            } else if (event.type === "error") {
+              setStreamingText("");
+              // Fall through — comments will still be polled
+            }
+          } catch { /* malformed SSE line, skip */ }
+        }
+      }
+
+      setStreamingText("");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.issues.comments(taskId),
+      });
+    } catch {
+      // Fallback: use the old comment-and-poll approach
+      try {
+        await issuesApi.addComment(taskId, trimmed, true, true);
+      } catch { /* already saved by relay, or genuinely failed */ }
       queryClient.invalidateQueries({
         queryKey: queryKeys.issues.comments(taskId),
       });
     } finally {
       setSending(false);
+      setOptimisticTyping(false);
       inputRef.current?.focus();
     }
   }, [sending, taskId, agentId, queryClient, comments]);
@@ -604,6 +662,21 @@ export function CEOChatPanel({
             </span>
           </button>
         )}
+        {/* Streaming response — shows text as it arrives from the relay */}
+        {streamingText && (
+          <div className="rounded-md px-2.5 py-1.5 text-[13px] leading-relaxed bg-muted/50 border border-border mr-6 animate-in fade-in duration-150">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {agentName}
+              </span>
+              <span className="text-[10px] text-cyan-500 font-medium">streaming</span>
+            </div>
+            <div className="prose prose-xs dark:prose-invert max-w-none text-[13px] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+              <MarkdownBody>{streamingText}</MarkdownBody>
+            </div>
+          </div>
+        )}
+
         {/* Optimistic typing indicator — shows immediately after user sends */}
         {optimisticTyping && !showStatus && (
           <div className="flex items-center gap-2 text-[12px] text-muted-foreground px-3 py-1.5">
