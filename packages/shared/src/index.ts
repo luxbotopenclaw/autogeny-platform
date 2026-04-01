@@ -323,6 +323,10 @@ export type {
   PluginWebhookDeliveryRecord,
   QuotaWindow,
   ProviderQuotaResult,
+  StaticAnalysisToolConfig,
+  StaticAnalysisConfig,
+  StaticAnalysisToolResult,
+  StaticAnalysisGateResult,
 } from "./types/index.js";
 
 export {

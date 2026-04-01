@@ -4,7 +4,7 @@ import type { Db } from "@paperclipai/db";
 import { issues, projects, projectWorkspaces } from "@paperclipai/db";
 import { updateExecutionWorkspaceSchema } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
-import { executionWorkspaceService, logActivity, workspaceOperationService } from "../services/index.js";
+import { executionWorkspaceService, issueService, logActivity, runStaticAnalysisGate, workspaceOperationService } from "../services/index.js";
 import { mergeExecutionWorkspaceConfig, readExecutionWorkspaceConfig } from "../services/execution-workspaces.js";
 import { parseProjectExecutionWorkspacePolicy } from "../services/execution-workspace-policy.js";
 import { readProjectWorkspaceRuntimeConfig } from "../services/project-workspace-runtime-config.js";
@@ -276,6 +276,39 @@ export function executionWorkspaceRoutes(db: Db) {
     );
 
     if (req.body.status === "archived" && existing.status !== "archived") {
+      // ── Static Analysis Gate ──────────────────────────────────────────────
+      // Run configurable static analysis before allowing the workspace to merge.
+      // Gate failures block the archive and post a comment on the linked issue.
+      const workspacePath = existing.cwd ?? existing.providerRef ?? null;
+      if (workspacePath && existing.sourceIssueId) {
+        const projectWorkspaceMeta = existing.projectWorkspaceId
+          ? await db
+              .select({ metadata: projectWorkspaces.metadata })
+              .from(projectWorkspaces)
+              .where(and(eq(projectWorkspaces.id, existing.projectWorkspaceId), eq(projectWorkspaces.companyId, existing.companyId)))
+              .then((rows) => (rows[0]?.metadata as Record<string, unknown> | null) ?? null)
+          : null;
+
+        const gateResult = await runStaticAnalysisGate({
+          workspacePath,
+          projectWorkspaceMetadata: projectWorkspaceMeta,
+        });
+
+        if (!gateResult.passed && !gateResult.skipped) {
+          if (gateResult.failureSummary) {
+            try {
+              const issueSvc = issueService(db);
+              await issueSvc.addComment(existing.sourceIssueId, gateResult.failureSummary, {});
+            } catch {
+              // Comment failure is non-fatal; gate still blocks the merge
+            }
+          }
+          res.status(409).json({ error: "Static analysis gate failed. Fix the errors and retry.", gateResult });
+          return;
+        }
+      }
+      // ── End Static Analysis Gate ──────────────────────────────────────────
+
       const readiness = await svc.getCloseReadiness(existing.id);
       if (!readiness) {
         res.status(404).json({ error: "Execution workspace not found" });
