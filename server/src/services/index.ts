@@ -30,3 +30,5 @@ export { notifyHireApproved, type NotifyHireApprovedInput } from "./hire-hook.js
 export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
 export { reconcilePersistedRuntimeServicesOnStartup, restartDesiredRuntimeServicesOnStartup } from "./workspace-runtime.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";
+export { runSemiFormalReview, runReviewIfEnabled, type SemiFormalReviewParams, type SemiFormalReviewResult } from "./semi-formal-review.js";
+export { runStaticAnalysisGate, readStaticAnalysisConfig } from "./static-analysis-gate.js";

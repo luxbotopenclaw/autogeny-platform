@@ -12,6 +12,9 @@ export const createCompanySchema = z.object({
 
 export type CreateCompany = z.infer<typeof createCompanySchema>;
 
+export const REVIEW_MODES = ["standard", "semi-formal"] as const;
+export type ReviewMode = (typeof REVIEW_MODES)[number];
+
 export const updateCompanySchema = createCompanySchema
   .partial()
   .extend({
@@ -20,6 +23,7 @@ export const updateCompanySchema = createCompanySchema
     requireBoardApprovalForNewAgents: z.boolean().optional(),
     brandColor: brandColorSchema,
     logoAssetId: logoAssetIdSchema,
+    reviewMode: z.enum(REVIEW_MODES).optional(),
   });
 
 export type UpdateCompany = z.infer<typeof updateCompanySchema>;
