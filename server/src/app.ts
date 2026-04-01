@@ -30,6 +30,7 @@ import { assetRoutes } from "./routes/assets.js";
 import { accessRoutes } from "./routes/access.js";
 import { pluginRoutes } from "./routes/plugins.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
+import { authBridgeRouter } from "./routes/auth-bridge.js";
 import { applyUiBranding } from "./ui-branding.js";
 import { logger } from "./middleware/logger.js";
 import { DEFAULT_LOCAL_PLUGIN_DIR, pluginLoader } from "./services/plugin-loader.js";
@@ -122,6 +123,9 @@ export async function createApp(
       },
     });
   });
+  // Auth bridge: must be mounted BEFORE the betterAuthHandler wildcard
+  app.use("/api/auth/bridge", authBridgeRouter(db));
+
   if (opts.betterAuthHandler) {
     app.all("/api/auth/*authPath", opts.betterAuthHandler);
   }
