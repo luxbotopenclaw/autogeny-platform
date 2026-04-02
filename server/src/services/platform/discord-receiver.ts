@@ -7,7 +7,7 @@
  * - APPLICATION_COMMAND (type=2) → route to agent via heartbeat wakeup
  */
 
-import { createVerify } from "node:crypto";
+import { createPublicKey, verify as cryptoVerify } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
 import { channelRoutings } from "@paperclipai/db";
@@ -76,21 +76,17 @@ export function validateDiscordSignature(
       typeof rawBody === "string" ? Buffer.from(rawBody, "utf8") : rawBody,
     ]);
 
-    const verify = createVerify("ed25519");
-    verify.update(message);
-
     // Discord provides a raw 32-byte Ed25519 public key (hex-encoded).
-    // Node.js createVerify("ed25519") needs DER SPKI format.
-    // Prepend the ASN.1 OID prefix for Ed25519 to create a valid SPKI key.
+    // Wrap it in DER SPKI format by prepending the ASN.1 OID prefix for Ed25519.
+    // Use crypto.verify() (one-shot) — Ed25519 is not hash-then-sign, so
+    // createVerify().update().verify() does not work reliably in Node.js.
     const rawKeyBytes = Buffer.from(publicKey, "hex");
     const spkiPrefix = Buffer.from("302a300506032b6570032100", "hex");
-    const spkiKey = Buffer.concat([spkiPrefix, rawKeyBytes]);
+    const spkiDer = Buffer.concat([spkiPrefix, rawKeyBytes]);
+    const publicKeyObj = createPublicKey({ key: spkiDer, format: "der", type: "spki" });
     const signatureBytes = Buffer.from(signature, "hex");
 
-    return verify.verify(
-      { key: spkiKey, format: "der", type: "spki" },
-      signatureBytes,
-    );
+    return cryptoVerify(null, message, publicKeyObj, signatureBytes);
   } catch (err) {
     logger.warn({ err }, "Discord signature validation error");
     return false;
