@@ -339,6 +339,13 @@
       "breakpoints": true
     },
     {
+      "idx": 48,
+      "version": "7",
+      "when": 1775100000000,
+      "tag": "0048_onboarding_sessions",
+      "breakpoints": true
+    },
+    {
       "idx": 50,
       "version": "7",
       "when": 1775200000000,
