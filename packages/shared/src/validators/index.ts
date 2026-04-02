@@ -291,3 +291,12 @@ export {
   type SetPluginState,
   type ListPluginState,
 } from "./plugin.js";
+
+export {
+  deskAssignmentSchema,
+  layoutDataSchema,
+  saveLayoutSchema,
+  type DeskAssignment,
+  type LayoutData,
+  type SaveLayoutInput,
+} from "./office-layout.js";

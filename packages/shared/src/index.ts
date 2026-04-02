@@ -601,3 +601,12 @@ export {
   type SecretsLocalEncryptedConfig,
   type ConfigMeta,
 } from "./config-schema.js";
+
+export {
+  deskAssignmentSchema,
+  layoutDataSchema,
+  saveLayoutSchema,
+  type DeskAssignment,
+  type LayoutData,
+  type SaveLayoutInput,
+} from "./validators/index.js";

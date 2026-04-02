@@ -30,3 +30,16 @@ export { notifyHireApproved, type NotifyHireApprovedInput } from "./hire-hook.js
 export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
 export { reconcilePersistedRuntimeServicesOnStartup, restartDesiredRuntimeServicesOnStartup } from "./workspace-runtime.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";
+export {
+  getUserLayout,
+  getDefaultLayout,
+  saveUserLayout,
+  saveDefaultLayout,
+  type OfficeLayoutRow,
+} from "./office-layout.js";
+export {
+  mapAgentStatusToPresence,
+  getCompanyPresence,
+  type PresenceStatus,
+  type AgentPresence,
+} from "./claw3d-presence.js";
