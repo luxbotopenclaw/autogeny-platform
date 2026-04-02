@@ -501,6 +501,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     };
   }
 
+  // ── Write auth token to claimed-api-key file for Hermes to pick up ──────
+  if (ctx.authToken) {
+    const hermesConfigDir = path.join(os.homedir(), ".hermes");
+    ensureDir(hermesConfigDir);
+    const claimedKeyFile = path.join(hermesConfigDir, "paperclip-claimed-api-key.json");
+    writeJsonAtomic(claimedKeyFile, { token: ctx.authToken, claimedAt: new Date().toISOString() });
+    await ctx.onLog("stdout", `${LOG_PREFIX} wrote PAPERCLIP_API_KEY to ${claimedKeyFile}\n`);
+  }
+
   // ── Remove stale outbox file for this run (prevent replay) ──────────────
   const outboxFile = path.join(outboxDir, `${safeRunId}.json`);
   removeFileSilent(outboxFile);

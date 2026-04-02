@@ -25,6 +25,7 @@ services:
       PAPERCLIP_MIGRATION_AUTO_APPLY: "${PAPERCLIP_MIGRATION_AUTO_APPLY:-true}"
       HERMES_WORKSPACE: /paperclip/hermes
       OPENCLAW_GATEWAY_URL: "${OPENCLAW_GATEWAY_URL:-ws://host.docker.internal:4200}"
+      PAPERCLIP_AGENT_JWT_SECRET: "${PAPERCLIP_AGENT_JWT_SECRET:-}"
       OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
     volumes:
       - paperclip-data:/paperclip

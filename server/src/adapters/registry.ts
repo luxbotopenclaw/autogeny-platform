@@ -160,7 +160,7 @@ const hermesGatewayAdapter: ServerAdapterModule = {
   execute: hermesGatewayExecute,
   testEnvironment: hermesGatewayTestEnvironment,
   models: hermesGatewayModels,
-  supportsLocalAgentJwt: false,
+  supportsLocalAgentJwt: true,
   agentConfigurationDoc: hermesGatewayAgentConfigurationDoc,
 };
 
