@@ -31,6 +31,7 @@ import { accessRoutes } from "./routes/access.js";
 import { pluginRoutes } from "./routes/plugins.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { authBridgeRouter } from "./routes/auth-bridge.js";
+import { slackPlatformRoutes } from "./routes/platform/slack.js";
 import { applyUiBranding } from "./ui-branding.js";
 import { logger } from "./middleware/logger.js";
 import { DEFAULT_LOCAL_PLUGIN_DIR, pluginLoader } from "./services/plugin-loader.js";
@@ -131,6 +132,8 @@ export async function createApp(
   }
   app.use(llmRoutes(db));
 
+  // Slack webhooks — authenticated via HMAC-SHA256 signature validation
+  app.use("/api/platform/slack", slackPlatformRoutes(db));
   // Mount API routes
   const api = Router();
   api.use(boardMutationGuard());
@@ -159,6 +162,7 @@ export async function createApp(
   api.use(dashboardRoutes(db));
   api.use(sidebarBadgeRoutes(db));
   api.use(instanceSettingsRoutes(db));
+
   const hostServicesDisposers = new Map<string, () => void>();
   const workerManager = createPluginWorkerManager();
   const pluginRegistry = pluginRegistryService(db);
