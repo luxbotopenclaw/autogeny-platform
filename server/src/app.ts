@@ -31,6 +31,10 @@ import { accessRoutes } from "./routes/access.js";
 import { pluginRoutes } from "./routes/plugins.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { authBridgeRouter } from "./routes/auth-bridge.js";
+import { discordWebhookRoutes } from "./routes/platform/discord-webhook.js";
+import { slackPlatformRoutes } from "./routes/platform/slack.js";
+import { telegramPlatformRoutes } from "./routes/platform/telegram.js";
+import { outboundRoutes } from "./routes/platform/outbound.js";
 import { applyUiBranding } from "./ui-branding.js";
 import { logger } from "./middleware/logger.js";
 import { DEFAULT_LOCAL_PLUGIN_DIR, pluginLoader } from "./services/plugin-loader.js";
@@ -78,6 +82,10 @@ export async function createApp(
   },
 ) {
   const app = express();
+
+  // Discord webhooks — Ed25519 signature validation, raw body required
+  // MUST be before express.json() middleware so the raw body stream is intact
+  app.use("/api/platform/discord", discordWebhookRoutes(db));
 
   app.use(express.json({
     // Company import/export payloads can inline full portable packages.
@@ -130,6 +138,11 @@ export async function createApp(
     app.all("/api/auth/*authPath", opts.betterAuthHandler);
   }
   app.use(llmRoutes(db));
+
+  // Platform webhook routes (must be after express.json() except Discord which is before)
+  app.use("/api/platform/slack", slackPlatformRoutes(db));
+  app.use("/api/platform/telegram", telegramPlatformRoutes(db));
+  app.use("/api/platform/outbound", outboundRoutes(db));
 
   // Mount API routes
   const api = Router();
