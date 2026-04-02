@@ -40,3 +40,5 @@ export {
   getMergeRoundCount,
   type EnqueueMergeParams,
 } from "./merge-queue.js";
+
+export { platformSkillRegistry } from "./platform-skills/index.js";
