@@ -4,7 +4,7 @@ import type { Db } from "@paperclipai/db";
 import { issues, projects, projectWorkspaces } from "@paperclipai/db";
 import { updateExecutionWorkspaceSchema } from "@paperclipai/shared";
 import { validate } from "../middleware/validate.js";
-import { executionWorkspaceService, logActivity, workspaceOperationService } from "../services/index.js";
+import { executionWorkspaceService, enqueueMerge, issueService, logActivity, runStaticAnalysisGate, workspaceOperationService } from "../services/index.js";
 import { mergeExecutionWorkspaceConfig, readExecutionWorkspaceConfig } from "../services/execution-workspaces.js";
 import { parseProjectExecutionWorkspacePolicy } from "../services/execution-workspace-policy.js";
 import { readProjectWorkspaceRuntimeConfig } from "../services/project-workspace-runtime-config.js";
@@ -276,6 +276,65 @@ export function executionWorkspaceRoutes(db: Db) {
     );
 
     if (req.body.status === "archived" && existing.status !== "archived") {
+      // ── Merge Queue / Static Analysis Gate ───────────────────────────────
+      // Workspaces with a git branch go through the serialized merge queue:
+      //   rebase → static analysis → git merge → next
+      //
+      // Workspaces without a git branch run the static analysis gate standalone.
+      const workspacePath = existing.cwd ?? existing.providerRef ?? null;
+
+      const projectWorkspaceMeta = existing.projectWorkspaceId
+        ? await db
+            .select({ metadata: projectWorkspaces.metadata })
+            .from(projectWorkspaces)
+            .where(and(eq(projectWorkspaces.id, existing.projectWorkspaceId), eq(projectWorkspaces.companyId, existing.companyId)))
+            .then((rows) => (rows[0]?.metadata as Record<string, unknown> | null) ?? null)
+        : null;
+
+      if (workspacePath && existing.branchName && existing.baseRef) {
+        // Git-branch workspace: serialize through merge queue
+        const mergeResult = await enqueueMerge({
+          db,
+          companyId: existing.companyId,
+          workspaceId: existing.id,
+          issueId: existing.sourceIssueId ?? null,
+          branchName: existing.branchName,
+          baseRef: existing.baseRef,
+          workspacePath,
+          projectWorkspaceMetadata: projectWorkspaceMeta,
+        });
+
+        if (mergeResult.status === "failed") {
+          res.status(409).json({
+            error: mergeResult.escalated
+              ? "Merge failed (round 2): issue escalated for spec revision."
+              : "Merge failed (round 1): fix the issues and retry.",
+            mergeQueueResult: mergeResult,
+          });
+          return;
+        }
+      } else if (workspacePath && existing.sourceIssueId) {
+        // No git branch: standalone static analysis gate
+        const gateResult = await runStaticAnalysisGate({
+          workspacePath,
+          projectWorkspaceMetadata: projectWorkspaceMeta,
+        });
+
+        if (!gateResult.passed && !gateResult.skipped) {
+          if (gateResult.failureSummary) {
+            try {
+              const issueSvc = issueService(db);
+              await issueSvc.addComment(existing.sourceIssueId, gateResult.failureSummary, {});
+            } catch {
+              // Comment failure is non-fatal; gate still blocks
+            }
+          }
+          res.status(409).json({ error: "Static analysis gate failed. Fix the errors and retry.", gateResult });
+          return;
+        }
+      }
+      // ── End Merge Queue / Static Analysis Gate ────────────────────────────
+
       const readiness = await svc.getCloseReadiness(existing.id);
       if (!readiness) {
         res.status(404).json({ error: "Execution workspace not found" });
