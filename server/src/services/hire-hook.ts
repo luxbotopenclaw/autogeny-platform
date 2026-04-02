@@ -1,10 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@paperclipai/db";
-import { agents } from "@paperclipai/db";
+import { agents, managedOpenRouterKeys } from "@paperclipai/db";
 import type { HireApprovedPayload } from "@paperclipai/adapter-utils";
 import { findServerAdapter } from "../adapters/registry.js";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
+import { managedOpenRouterService } from "./managed-openrouter.js";
 
 const HIRE_APPROVED_MESSAGE =
   "Tell your user that your hire was approved, now they should assign you a task in Paperclip or ask you to create issues.";
@@ -27,6 +28,30 @@ export async function notifyHireApproved(
 ): Promise<void> {
   const { companyId, agentId, source, sourceId } = input;
   const approvedAt = input.approvedAt ?? new Date();
+
+  // Auto-provision managed OpenRouter key if company has one configured.
+  // Non-fatal: key provisioning failure never blocks the hire flow.
+  const hasManagedOrKey = await db
+    .select({ id: managedOpenRouterKeys.id })
+    .from(managedOpenRouterKeys)
+    .where(
+      and(
+        eq(managedOpenRouterKeys.companyId, companyId),
+        isNull(managedOpenRouterKeys.agentId),
+      ),
+    )
+    .then((rows) => rows.length > 0);
+
+  if (hasManagedOrKey) {
+    void managedOpenRouterService(db)
+      .provisionAgentKey(agentId, companyId)
+      .then(() => {
+        logger.info({ companyId, agentId }, "hire hook: managed OpenRouter key provisioned for agent");
+      })
+      .catch((err: unknown) => {
+        logger.warn({ err, companyId, agentId }, "hire hook: managed OpenRouter key provisioning failed (non-fatal)");
+      });
+  }
 
   const row = await db
     .select()

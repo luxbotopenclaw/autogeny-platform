@@ -212,6 +212,7 @@ export const SECRET_PROVIDERS = [
   "aws_secrets_manager",
   "gcp_secret_manager",
   "vault",
+  "managed_openrouter",
 ] as const;
 export type SecretProvider = (typeof SECRET_PROVIDERS)[number];
 

@@ -1,4 +1,5 @@
 export type { Company } from "./company.js";
+export type { StaticAnalysisToolConfig, StaticAnalysisConfig, StaticAnalysisToolResult, StaticAnalysisGateResult } from "./static-analysis.js";
 export type { InstanceExperimentalSettings, InstanceGeneralSettings, InstanceSettings } from "./instance.js";
 export type {
   CompanySkillSourceType,
@@ -201,3 +202,9 @@ export type {
   PluginJobRunRecord,
   PluginWebhookDeliveryRecord,
 } from "./plugin.js";
+export type {
+  MergeQueueActiveItem,
+  MergeQueueBranchStats,
+  MergeQueueStats,
+  MergeQueueOutcome,
+} from "./merge-queue.js";
