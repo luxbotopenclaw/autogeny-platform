@@ -37,5 +37,10 @@ export async function sendSlackMessage(
     throw new Error(`Slack API HTTP error: ${response.status} ${response.statusText}`);
   }
 
-  return response.json() as Promise<SlackApiResponse>;
+  // Slack Web API returns HTTP 200 even for application-level errors — must check `ok`.
+  const data = (await response.json()) as SlackApiResponse;
+  if (!data.ok) {
+    throw new Error(`Slack API error: ${data.error ?? "unknown_error"}`);
+  }
+  return data;
 }
