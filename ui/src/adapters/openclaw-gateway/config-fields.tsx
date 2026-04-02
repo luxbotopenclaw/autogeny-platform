@@ -112,7 +112,7 @@ export function OpenClawGatewayConfigFields({
           }
           immediate
           className={inputClass}
-          placeholder="ws://127.0.0.1:18789"
+          placeholder="ws://host.docker.internal:4200"
         />
       </Field>
 

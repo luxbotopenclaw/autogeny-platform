@@ -1382,8 +1382,25 @@ function ModelDropdown({
       manualModel &&
       !models.some((m) => m.id.toLowerCase() === manualModel.toLowerCase()),
   );
+  // Fallback model list for adapters that return empty (e.g. hermes_local)
+  const HERMES_FALLBACK_MODELS = [
+    { id: "qwen/qwen3.6-plus:free", label: "Qwen 3.6 Plus (Free)" },
+    { id: "google/gemini-2.5-flash-preview:thinking", label: "Gemini 2.5 Flash (Thinking)" },
+    { id: "google/gemini-2.5-pro-preview", label: "Gemini 2.5 Pro" },
+    { id: "anthropic/claude-sonnet-4-5", label: "Claude Sonnet 4.5" },
+    { id: "anthropic/claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+    { id: "anthropic/claude-opus-4-6", label: "Claude Opus 4.6" },
+    { id: "openai/gpt-4o", label: "GPT-4o" },
+    { id: "openai/o3-mini", label: "o3-mini" },
+    { id: "deepseek/deepseek-chat-v3-0324:free", label: "DeepSeek V3 (Free)" },
+    { id: "deepseek/deepseek-r1:free", label: "DeepSeek R1 (Free)" },
+    { id: "meta-llama/llama-4-maverick:free", label: "Llama 4 Maverick (Free)" },
+    { id: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral Small 3.1 (Free)" },
+  ];
+  const effectiveModels = models.length > 0 ? models : (creatable ? HERMES_FALLBACK_MODELS : []);
+
   const filteredModels = useMemo(() => {
-    return models.filter((m) => {
+    return effectiveModels.filter((m) => {
       if (!modelSearch.trim()) return true;
       const q = modelSearch.toLowerCase();
       const provider = extractProviderId(m.id) ?? "";
@@ -1393,7 +1410,7 @@ function ModelDropdown({
         provider.toLowerCase().includes(q)
       );
     });
-  }, [models, modelSearch]);
+  }, [effectiveModels, modelSearch]);
   const groupedModels = useMemo(() => {
     if (!groupByProvider) {
       return [
