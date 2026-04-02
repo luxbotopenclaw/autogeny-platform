@@ -407,7 +407,7 @@ export function onboardingConciergeService(db: Db) {
       })
       .where(eq(onboardingSessions.id, sessionId));
 
-    return { companyId: result.company.id, companyPrefix: result.company.issuePrefix };
+    return { companyId: result.company.id, companyPrefix: result.company.name };
   }
 
   // -------------------------------------------------------------------------

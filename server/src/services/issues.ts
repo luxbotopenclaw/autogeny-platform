@@ -1077,7 +1077,7 @@ export function issueService(db: Db) {
           );
 
           if (resolvedMode === "sequential") {
-            const order = await generateProcessingOrder(tx, companyId);
+            const order = await generateProcessingOrder(tx as any, companyId);
             if (order.length > 0) {
               values.processingOrder = order;
               values.processingPosition = 0;
