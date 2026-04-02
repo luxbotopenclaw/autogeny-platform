@@ -271,7 +271,15 @@ async function discordRequest<T>(
   });
 
   if (!response.ok) {
+    let errorBody: { code?: number; message?: string } | null = null;
     const errorText = await response.text().catch(() => "(no body)");
+    try { errorBody = JSON.parse(errorText) as { code?: number; message?: string }; } catch { /* ignore */ }
+
+    // Discord error 30013: Maximum number of guild channels reached (500)
+    if (response.status === 400 && errorBody?.code === 30013) {
+      throw new Error("Discord guild has reached the 500 channel limit — workspace provisioning unavailable");
+    }
+
     throw new Error(
       `Discord API error [${method} ${path}]: ${response.status} ${response.statusText} — ${errorText}`,
     );
