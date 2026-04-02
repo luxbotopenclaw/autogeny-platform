@@ -1,0 +1,37 @@
+services:
+  server:
+    container_name: autogeny-platform
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 4g
+    ports:
+      - "3100:3100"
+    environment:
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL must be set}"
+      PORT: "${PORT:-3100}"
+      HOST: "${HOST:-0.0.0.0}"
+      SERVE_UI: "${SERVE_UI:-true}"
+      PAPERCLIP_DEPLOYMENT_MODE: "${PAPERCLIP_DEPLOYMENT_MODE:-authenticated}"
+      PAPERCLIP_DEPLOYMENT_EXPOSURE: "${PAPERCLIP_DEPLOYMENT_EXPOSURE:-private}"
+      PAPERCLIP_PUBLIC_URL: "${PAPERCLIP_PUBLIC_URL}"
+      PAPERCLIP_ALLOWED_HOSTNAMES: "${PAPERCLIP_ALLOWED_HOSTNAMES}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}"
+      AUTOGENY_JWT_SECRET: "${AUTOGENY_JWT_SECRET:?AUTOGENY_JWT_SECRET must be set}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY must be set}"
+      PAPERCLIP_MIGRATION_AUTO_APPLY: "${PAPERCLIP_MIGRATION_AUTO_APPLY:-true}"
+      HERMES_WORKSPACE: /paperclip/hermes
+    volumes:
+      - paperclip-data:/paperclip
+      - agent-workspaces:/workspaces
+    networks:
+      - docker_default
+
+networks:
+  docker_default:
+    external: true
+
+volumes:
+  paperclip-data:
+  agent-workspaces:
