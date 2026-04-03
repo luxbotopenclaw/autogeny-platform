@@ -9,6 +9,7 @@ import type {
 } from "@paperclipai/shared";
 import type { AdapterModel, ClaudeLoginResult } from "../api/agents";
 import { agentsApi } from "../api/agents";
+import { openRouterApi } from "../api/openrouter";
 import { secretsApi } from "../api/secrets";
 import { assetsApi } from "../api/assets";
 import {
@@ -1432,24 +1433,15 @@ function ModelDropdown({
       manualModel &&
       !models.some((m) => m.id.toLowerCase() === manualModel.toLowerCase()),
   );
-  // Fallback model list for adapters that return empty (e.g. hermes_local)
-  const HERMES_FALLBACK_MODELS = [
-  { id: "qwen/qwen3.6-plus:free", label: "Qwen 3.6 Plus (Free)" },
-  { id: "google/gemma-3-27b-it:free", label: "Gemma 3 27B (Free)" },
-  { id: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B (Free)" },
-  { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "Nemotron 3 Super 120B (Free)" },
-  { id: "minimax/minimax-m2.5:free", label: "MiniMax M2.5 (Free)" },
-  { id: "deepseek/deepseek-chat-v3-0324", label: "DeepSeek V3 0324" },
-  { id: "deepseek/deepseek-r1", label: "DeepSeek R1" },
-  { id: "google/gemini-3-flash-preview", label: "Gemini 3 Flash" },
-  { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro" },
-  { id: "anthropic/claude-sonnet-4.6", label: "Claude Sonnet 4.6" },
-  { id: "anthropic/claude-opus-4.6", label: "Claude Opus 4.6" },
-  { id: "anthropic/claude-haiku-4.5", label: "Claude Haiku 4.5" },
-  { id: "openai/gpt-5.4", label: "GPT-5.4" },
-  { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini" },
-];
-  const effectiveModels = models.length > 0 ? models : (creatable ? HERMES_FALLBACK_MODELS : []);
+  // Dynamic OpenRouter model list
+  const DYNAMIC_MODEL_ADAPTERS = ["hermes_local", "openclaw_gateway", "pi_local"];
+  const { data: openRouterModels } = useQuery({
+    queryKey: ["openrouter-models"],
+    queryFn: openRouterApi.models,
+    staleTime: 15 * 60 * 1000,
+    enabled: DYNAMIC_MODEL_ADAPTERS.includes(adapterType),
+  });
+  const effectiveModels = models.length > 0 ? models : (openRouterModels ?? []).map(m => ({ id: m.id, label: m.label }));
 
   const filteredModels = useMemo(() => {
     return effectiveModels.filter((m) => {

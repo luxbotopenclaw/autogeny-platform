@@ -22,6 +22,7 @@ import { approvalRoutes } from "./routes/approvals.js";
 import { secretRoutes } from "./routes/secrets.js";
 import { costRoutes } from "./routes/costs.js";
 import { managedOpenRouterRoutes } from "./routes/managed-openrouter.js";
+import { openRouterModelRoutes } from "./routes/openrouter-models.js";
 import { managedOpenRouterService } from "./services/managed-openrouter.js";
 import { activityRoutes } from "./routes/activity.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
@@ -173,6 +174,7 @@ export async function createApp(
   api.use(secretRoutes(db));
   api.use(costRoutes(db));
   api.use(managedOpenRouterRoutes(db));
+  api.use(openRouterModelRoutes());
   api.use(activityRoutes(db));
   api.use(dashboardRoutes(db));
   api.use(sidebarBadgeRoutes(db));
