@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Moon, Settings, Sun } from "lucide-react";
+import { BookOpen, LogOut, Moon, Settings, Sun } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
@@ -33,6 +33,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
+import { authApi } from "../api/auth";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const INSTANCE_SETTINGS_MEMORY_KEY = "paperclip.lastInstanceSettingsPath";
@@ -336,6 +337,20 @@ export function Layout() {
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground shrink-0"
+                  onClick={async () => {
+                    await authApi.signOut();
+                    window.location.href = "/";
+                  }}
+                  aria-label="Sign out"
+                  title="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -393,6 +408,20 @@ export function Layout() {
                   title={`Switch to ${nextTheme} mode`}
                 >
                   {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground shrink-0"
+                  onClick={async () => {
+                    await authApi.signOut();
+                    window.location.href = "/";
+                  }}
+                  aria-label="Sign out"
+                  title="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             </div>

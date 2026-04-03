@@ -143,4 +143,10 @@ export const queryKeys = {
     dashboard: (pluginId: string) => ["plugins", pluginId, "dashboard"] as const,
     logs: (pluginId: string) => ["plugins", pluginId, "logs"] as const,
   },
+  office: {
+    presence: (companyId: string | undefined) =>
+      ["office", companyId, "presence"] as const,
+    layout: (companyId: string | undefined) =>
+      ["office", companyId, "layout"] as const,
+  },
 };
