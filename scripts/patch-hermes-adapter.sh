@@ -27,3 +27,16 @@ if ! grep -q 'Authorization.*Bearer.*PAPERCLIP_API_KEY' "$ADAPTER_FILE"; then
 fi
 
 echo "Hermes adapter patched successfully"
+
+# 3. Fix timeout=0 treated as "use default 300s" (|| vs ??)
+if grep -q 'cfgNumber(config.timeoutSec) || DEFAULT_TIMEOUT_SEC' "$ADAPTER_FILE"; then
+  sed -i 's/cfgNumber(config.timeoutSec) || DEFAULT_TIMEOUT_SEC/cfgNumber(config.timeoutSec) ?? DEFAULT_TIMEOUT_SEC/' "$ADAPTER_FILE"
+  echo "  Fixed timeout=0 bug (|| → ??)"
+fi
+
+# 4. Remove python3 pipe from curl commands (tirith blocks curl|python3)
+if grep -q 'python3 -m json.tool' "$ADAPTER_FILE"; then
+  sed -i 's/ | python3 -m json.tool//g' "$ADAPTER_FILE"
+  sed -i "s/ | python3 -c .*\"//g" "$ADAPTER_FILE"
+  echo "  Removed python3 pipes from curl commands"
+fi

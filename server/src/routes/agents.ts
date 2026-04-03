@@ -2063,6 +2063,20 @@ export function agentRoutes(db: Db) {
     res.status(202).json(run);
   });
 
+
+  router.get("/companies/:companyId/adapter-auth-status", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const adapterType = (req.query.adapterType as string) ?? "";
+    const credDir = `/paperclip/credentials/${companyId}`;
+    let authenticated = false;
+    if (adapterType === "claude_local") {
+      const { existsSync } = await import("node:fs");
+      authenticated = existsSync(`${credDir}/claude/.credentials.json`);
+    }
+    res.json({ authenticated });
+  });
+
   router.post("/agents/:id/claude-login", async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;

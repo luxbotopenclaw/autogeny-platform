@@ -28,6 +28,7 @@ import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
+import { setupTerminalWebSocketServer } from "./realtime/terminal-ws.js";
 import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup, routineService } from "./services/index.js";
 import { startClaw3DGateway } from "./services/claw3d-gateway/index.js";
 import { createStorageServiceFromConfig } from "./storage/index.js";
@@ -550,6 +551,7 @@ export async function startServer(): Promise<StartedServer> {
     resolveSessionFromHeaders,
   });
 
+  setupTerminalWebSocketServer(server, db as any);
   startClaw3DGateway(db as any);
 
   void reconcilePersistedRuntimeServicesOnStartup(db as any)

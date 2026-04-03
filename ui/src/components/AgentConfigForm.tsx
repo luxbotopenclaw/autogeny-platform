@@ -9,6 +9,7 @@ import type {
 } from "@paperclipai/shared";
 import type { AdapterModel, ClaudeLoginResult } from "../api/agents";
 import { agentsApi } from "../api/agents";
+import { WebTerminal } from "./WebTerminal";
 import { secretsApi } from "../api/secrets";
 import { assetsApi } from "../api/assets";
 import {
@@ -379,6 +380,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const [modelOpen, setModelOpen] = useState(false);
   const [thinkingEffortOpen, setThinkingEffortOpen] = useState(false);
   const [claudeLoginResult, setClaudeLoginResult] = useState<ClaudeLoginResult | null>(null);
+  const [showTerminal, setShowTerminal] = useState(false);
   const runClaudeLogin = useMutation({
     mutationFn: () => agentsApi.loginWithClaude(!isCreate ? props.agent.id : "", selectedCompanyId!),
     onSuccess: (result) => setClaudeLoginResult(result),
@@ -800,44 +802,22 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
               )}
               {!isCreate && adapterType === "claude_local" && (
                 <div className="border border-amber-500/30 bg-amber-500/5 rounded-lg p-3 space-y-2">
-                  <p className="text-xs font-medium text-amber-600 dark:text-amber-400">Claude Code Authentication</p>
+                  <p className="text-xs font-medium text-amber-600 dark:text-amber-400">Authentication Required</p>
                   <p className="text-xs text-muted-foreground">
-                    Run <code className="font-mono">claude login</code> to authenticate for this organization.
+                    Run <code className="font-mono">claude auth login</code> in the terminal below to authenticate.
                   </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => runClaudeLogin.mutate()}
-                    disabled={runClaudeLogin.isPending || !selectedCompanyId}
-                  >
-                    {runClaudeLogin.isPending ? "Running claude login..." : "Login to Claude Code"}
-                  </Button>
-                  {runClaudeLogin.isError && (
-                    <p className="text-xs text-destructive">
-                      {runClaudeLogin.error instanceof Error
-                        ? runClaudeLogin.error.message
-                        : "Failed to run Claude login"}
-                    </p>
-                  )}
-                  {claudeLoginResult?.loginUrl && (
-                    <p className="text-xs">
-                      Open this URL in your browser:
-                      <a
-                        href={claudeLoginResult.loginUrl}
-                        className="text-blue-600 underline underline-offset-2 ml-1 break-all dark:text-blue-400"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {claudeLoginResult.loginUrl}
-                      </a>
-                    </p>
-                  )}
-                  {claudeLoginResult?.stdout && (
-                    <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-2 text-xs font-mono overflow-x-auto whitespace-pre-wrap">
-                      {claudeLoginResult.stdout}
-                    </pre>
+                  {showTerminal ? (
+                    <WebTerminal companyId={selectedCompanyId!} onClose={() => setShowTerminal(false)} />
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setShowTerminal(true)}
+                    >
+                      Open Terminal
+                    </Button>
                   )}
                 </div>
               )}
@@ -918,7 +898,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                       value={eff(
                         "adapterConfig",
                         "timeoutSec",
-                        Number(config.timeoutSec ?? 0),
+                        Number(config.timeoutSec ?? 300),
                       )}
                       onCommit={(v) => mark("adapterConfig", "timeoutSec", v)}
                       immediate
