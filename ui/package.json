@@ -57,9 +57,13 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.1.5",
     "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.4.1"
+    "tailwind-merge": "^3.4.1",
+    "three": "^0.172.0",
+    "@react-three/fiber": "^8.17.0",
+    "@react-three/drei": "^9.117.0"
   },
   "devDependencies": {
+    "@types/three": "^0.172.0",
     "@tailwindcss/vite": "^4.0.7",
     "@types/node": "^25.2.3",
     "@types/react": "^19.0.8",

@@ -31,13 +31,35 @@ services:
       - paperclip-data:/paperclip
       - agent-workspaces:/workspaces
     networks:
-      - docker_default
+      - platform
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: autogeny-platform-db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: paperclip
+      POSTGRES_PASSWORD: paperclip
+      POSTGRES_DB: paperclip
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperclip -d paperclip"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - platform
 
 networks:
-  docker_default:
-    external: true
+  platform:
+    driver: bridge
 
 volumes:
   paperclip-data:
   agent-workspaces:
+  pgdata:
 
